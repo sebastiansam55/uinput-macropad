@@ -80,18 +80,13 @@ def event_loop(keybeeb, layers, macros):
         for ev in keybeeb.read_loop():
             mname = None
             layer_swap = None
-            if ev.value == 1: #modifier pressed down
-                held_keys.append(ev.code)
-            elif ev.value == 0: #modifier released!
-                if ev.code in held_keys:
-                    held_keys.remove(ev.code)
-            layer_swap = check_held_keys(held_keys, layers)
+            layer_swap = check_held_keys(keybeeb.active_keys(), layers)
             if layer_swap and (time.time()-toggle_time)>=toggle_delay:
                 toggle_time = time.time()
                 layer = switch_layer(layer_swap, macros)
                 print("Layer Swap", layer)
 
-            mname = check_held_keys(held_keys, layer)
+            mname = check_held_keys(keybeeb.active_keys(), layer)
             if mname and (time.time()-toggle_time)>=toggle_delay:
                 toggle_time = time.time()
                 mtype, minfo = get_macro_info(mname, layer)
