@@ -107,10 +107,21 @@ def event_loop(keybeeb, layers, macros):
                 elif mtype == "keycomb":
                     for keycode in minfo:
                         # for keycode in keyset:
-                        if keycode>0:
-                            ui.write(e.EV_KEY, keycode, 1) #down
-                        else:
-                            ui.write(e.EV_KEY, -keycode, 0) #up
+                        if type(keycode) is int:
+                            if keycode>0:
+                                ui.write(e.EV_KEY, keycode, 1) #down
+                            else:
+                                ui.write(e.EV_KEY, -keycode, 0) #up
+                        elif type(keycode) is float: #sleep
+                            ui.write(e.EV_SYN, 0, 0)
+                            time.sleep(keycode)
+                        elif type(keycode) is list:
+                            for k in keycode:
+                                ui.write(e.EV_KEY, k, 1)
+                                ui.write(e.EV_KEY, k, 0)
+                            ui.write(e.EV_SYN, 0, 0)
+
+
                     ui.write(e.EV_SYN, 0, 0)
                         # time.sleep(0.01)
 

@@ -57,7 +57,10 @@ There are currently 4 different types of macros supported;
 3. `keylist`
     * A list of keys to be sent in quick succession (not to be used for hotkeys!)
 4. `keycomb`
-    * a list of keys to be sent, needs to have the "up" and "down" signals for every key.
+    * a list of events. There are currently 4 different events you can send depending on the data type used. 
+        - If item in the list is a `int` it will be sent as an keydown or keyup signal depending on the sign. (+/- -> down/up)
+        - If the item is a `float` (has a decimal point) it will be used to sleep the program for the specified amount of time. This is useful for macros that are can't be sent all at once. I have found that 0.25 is usually enough for most programs.
+        - If the item is a `list` the program will send the events in a similar fashion as to the `keylist` type of macro.
     * A keydown event is sent by the keycode being negative; a keyup event is sent for positive keycodes.
     * If you wanted to send Ctrl+A: 
         - `[29,30,-29,-30]`
@@ -80,6 +83,26 @@ Each layer can be configured to be swapped to with the press of a button[s]. Thi
 
 Very cool. I have it set to default to true however.
 
+## Real world usage example:
+I use the sublime livereload and live preview plugins when writing readmes (including this one!). This macro is included in the config, I recommend spacing it in similar fashion as I have, breaking it up step by step makes it much easier to understand what is or is not happening. I like to puncuate each step with a `0.25`s wait.
+
+
+The process to enable them is as follows;
+| Step | Step details | json |
+| :--: | :----------: | :--: |
+| 1. | Open command palette (Ctrl-Shift-P) | `29, 42, 25, -29, -42, -25, 0.25,` |
+| 2. | Type "livereload" | `[38,23,47,18,19,18,38,24,30,32], 0.25,` |
+| 3. | Move down 5 times | `[108, 108, 108, 108, 108], 0.25,` |
+| 4. | Press enter | `[28], 0.25,` |
+| 5. | Move down 4 times | `[108, 108, 108, 108], 0.25,` |
+| 6. | Press enter | `[28], 0.25,` |
+| 7. | Reopen command palette | `29, 42, 25, -29, -42, -25, 0.25,` |
+| 8. | Type "browser" | `[25, 19, 18, 47, 23, 18, 17], 0.25,` |
+| 9. | Press enter | `[28], 0.25,` |
+| 10. | Press enter | `[28], 0.25` |
+
+
+Note the liberal usage of the sleep function. They could probably be tuned to make the macro go faster but I'm more concerned with reliability over speed. 10 steps with a 0.25 delay is 2.5 seconds. Compared to the 10+ it takes me otherwise (not to mention remembering what the names of the plugins are) it is a definite win. 
 
 ## Notes:
 
