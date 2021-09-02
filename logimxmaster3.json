@@ -1,0 +1,14 @@
+{
+	"macros": {
+		"layer1": [
+			["copy", [275], "keycomb", [29, 46, -29, -46]],
+			["paste", [276], "keycomb", [29, 47, -29, -47]]
+		]
+	},
+	"layers": [
+		["layer1", [59]]
+	],
+	"dev_name": "Logitech MX Master 3",
+	"only_defined": false,
+	"full_grab": false
+}
