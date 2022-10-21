@@ -71,15 +71,27 @@ There are currently 4 different types of macros supported;
     * This system is also how you can send capital/shifted characters:
         - `[42,30,-42,-30]` will send "A"
         - `[42,30,-30,31,-31,2,-2,-42]` sends "AS!"
-
+5. `button`
+    * Created quickly for use with the hscroll wheel in a mx master 3. May rename later.
+        - The idea is that you can map the key code and value (1 or -1 for the hscroll wheel) for EV_REL type events (like scroll wheels and sticks)
+6. `dispose`
+    * Will dispose of events compelety when used in combination with `full_grab`
 
 If you want to find out more about what codes are sent when you can monitor your "main" keyboards output with `evtest`. In order to debug the output of your macros you can also monitor the output of the device created by this program with `evtest`.
 
 Each layer can be configured to be swapped to with the press of a button[s]. This is controlled in the `dev_name` variable. In order to determine the name of your device you can run `evtest` with it unplugged and then with it plugged in, comparing the list to find the new device.
 
-`full_grab` determines if the `evdev` device is "grabbed". If this is not set as true the key events generated naturally through the use of the device will also be sent. (this is not recommended unless you know what you are doing.). By default this will be set to True.
+`full_grab` - All signals are sent to only this program. Useful for disabling keys.
 
-`only_defined` determines if the key events that are not bound to a macro are still sent. This means that if you had say a full size keyboard with a numpad you could macro-define all of the keypad keys and set `only_defined` to false and still have regular use of the rest of the keyboard! 
+Determines if the `evdev` device is "grabbed". If this is not set as true the key events generated naturally through the use of the device will also be sent. (this is not recommended unless you know what you are doing.). By default this will be set to True.
+
+`only_defined` - Will unmapped keystrokes be sent?
+
+Determines if the key events that are not bound to a macro are still sent. This means that if you had say a full size keyboard with a numpad you could macro-define all of the keypad keys and set `only_defined` to false and still have regular use of the rest of the keyboard! 
+
+`clone` - Whether the created UInput device will clone the capabilities of the device you are grabbing.
+May be needed if you are having issues with mouse events
+
 
 Very cool. I have it set to default to true however.
 
@@ -104,9 +116,27 @@ The process to enable them is as follows;
 
 Note the liberal usage of the sleep function. They could probably be tuned to make the macro go faster but I'm more concerned with reliability over speed. 10 steps with a 0.25 delay is 2.5 seconds. Compared to the 10+ it takes me otherwise (not to mention remembering what the names of the plugins are) it is a definite win. 
 
+## Logitech MX Master 3 mods
+I have a config file in this repo (logimxmaster3.json) that describes some remaps that I find useful. It's self explanatory if you've programmed it.
+macros on layer1:
+* copy - remaps the "back" button to be ctrl C via the "keycomb" functionality, basically it presses down ctrl then c and then releases in the same order. This makes a ctrl-c function that is nearly indistinguishable from genine ones.
+* paste - remaps the "forward" button to send ctrl V via the "keycomb" functionality.
+* hscoll - converts the side way scroll wheel to do arrow keys. The best part is that the arrow keys will essentially scroll any where the regular hscroll would but it comes with the added benefit of it passing through virtualbox and any RDP client I have tried. 
+* disablehscroll - disposes of the scroll events that are normally sent.
+
+Pretty cool if I do say so myself
+
 ## Notes:
 
 The program is written based on my [uinput-keyboard-mapper]() meaning it is able to survive device disconnects. 
+
+## TODO:
+Suggestions welcome!
+
+Prebuilt configs that are general enough to have mass appeal can be added as PRs if any one is adventerous enough to do so. 
+
+## Breaking changes
+Nothing is guarnteed compatibitly wise 
 
 
 ## Too complicated?
