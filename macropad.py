@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 *-*
 #
-# uinput-macropad
+# UInput-macropad
 # Version: 0.1
 # Date: 20 Aug. 2023
 # Copyright: 2021, 2022 sebastiansam55
@@ -9,17 +9,17 @@
 #
 # LICENSE:
 #
-# This file is part of uinput-macropad.
+# This file is part of UInput-macropad.
 #
-# uinput-macropad is free software: you can redistribute it and/or modify it under the terms of the
+# UInput-macropad is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either
 # version 3 of the License, or (at your option) any later version.
 #
-# uinput-macropad is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# UInput-macropad is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with uinput-macropad.
+# You should have received a copy of the GNU General Public License along with UInput-macropad.
 # If not, see <https://www.gnu.org/licenses/>. 
 #
 
@@ -179,7 +179,9 @@ def event_loop(keybeeb, layers, macros):
         print("device disconnected!")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="""UInput Macropad""")
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
+        description="UInput Macropad ver. 0.1",\
+        epilog="Copyright: 2021, 2022 sebastiansam55\nCopyright: 2023 Lurgainn\nLicensed under the terms of the GNU General Public License version 3")
     parser.add_argument('config', help="Path to config file")
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help="Enable verbose logging")
     # command line behavior should be to take priority over config file settings
