@@ -23,6 +23,7 @@
 # If not, see <https://www.gnu.org/licenses/>. 
 #
 
+# Imports
 import os
 import sys
 import time
@@ -32,6 +33,10 @@ import subprocess
 
 import evdev
 from evdev import ecodes as e
+
+# Constants
+VERSION = '0.1'
+DEFAULT_CONFIG_FILE = '~/.config/uinput-macropad/config.json'
 
 def get_devices():
     return [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -179,10 +184,12 @@ def event_loop(keybeeb, layers, macros):
         print("device disconnected!")
 
 if __name__ == "__main__":
+    # Create arguments parser
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
-        description="UInput Macropad ver. 0.1",\
+        description="UInput Macropad ver. " + VERSION + "\n(standard path of config file is " + DEFAULT_CONFIG_FILE + ")",\
         epilog="Copyright: 2021, 2022 sebastiansam55\nCopyright: 2023 Lurgainn\nLicensed under the terms of the GNU General Public License version 3")
-    parser.add_argument('config', help="Path to config file")
+    # Set the arguments
+    parser.add_argument('-f', '--file-config', help="Path to alternative config file")
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help="Enable verbose logging")
     # command line behavior should be to take priority over config file settings
     parser.add_argument('-c', '--clone', action="store_true", default=False, help="Creates the UInput device with the capability of the device we're grabbing")
@@ -193,14 +200,20 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-
-    if args.config:
-        print(f"Loading config from: {args.config}")
+    # Default path to config file
+    config_file = os.path.expanduser(DEFAULT_CONFIG_FILE)
+    # Set alternative path to config file
+    if args.file_config is not None:
+        config_file = args.file_config
+    # Check if config file exists
+    if os.path.isfile(config_file):
+        print(f"Loading config from: {config_file}")
         if args.verbose:
             print(f"Command line args: {args}")
         # try:
-        f = open(args.config, 'r')
+        f = open(config_file, 'r')
         data = json.loads(f.read())
+        f.close()
         dev_name = data.get("dev_name")
         if data.get("full_grab") is not None:
             full_grab = data.get("full_grab")
@@ -239,6 +252,9 @@ if __name__ == "__main__":
 
         # except:
             # sys.exit("Error loading config files")
+    else:
+        print(f"Config file not found!")
+        sys.exit(0)
 
 
     time.sleep(1)
