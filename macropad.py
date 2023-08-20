@@ -191,14 +191,14 @@ if __name__ == "__main__":
         epilog = "Copyright: 2021, 2022 sebastiansam55\nCopyright: 2023 Lurgainn\nLicensed under the terms of the GNU General Public License version 3")
     # Set the arguments
     parser.add_argument('-f', '--file-config', help = "Path to alternative config file")
-    parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = "Enable verbose logging")
-    # command line behavior should be to take priority over config file settings
-    parser.add_argument('-c', '--clone', action = "store_true", default = False, help = "Creates the UInput device with the capability of the device we're grabbing")
+    parser.add_argument('-v', '--verbose', action = 'store_true', help = "Enable verbose logging (default = False)")
+    # command line behavior wiil take priority over config file settings
+    parser.add_argument('--full-grab', action = argparse.BooleanOptionalAction, help="Absorbs all signals coming from device (default = True)")
+    parser.add_argument('--only-defined', action = argparse.BooleanOptionalAction, help="Determine if defined only keystrokes are sent (default = False)")
+    parser.add_argument('--clone', action = argparse.BooleanOptionalAction, help = "Creates the UInput device with the capability of the device we're grabbing (default = True)")
     #TODO
     #parser.add_argument('-d', '--dev_name', help="The device name (in quotes) that you want to read/grab from")
-    #parser.add_argument('-od', '--only_defined', help="")
-    #parser.add_argument('-fg', '--full_grab', help="Absorbs all signals coming from device")
-
+    
     args = parser.parse_args()
 
     # Default path to config file
@@ -211,6 +211,7 @@ if __name__ == "__main__":
         print(f"Loading config from: {config_file}")
         if args.verbose:
             print(f"Command line args: {args}")
+        # Load config file
         try:
             f = open(config_file, 'r')
             data = json.loads(f.read())
@@ -218,13 +219,35 @@ if __name__ == "__main__":
         except:
             print(f"Error loading config file '{config_file}'")
             sys.exit(2)
+        # Get device to intercept
         dev_name = data.get("dev_name")
+
+        # Set full_grab default value
+        full_grab = True
+        # Overwrite with config file if defined
         if data.get("full_grab") is not None:
             full_grab = data.get("full_grab")
+        # Overwrite with argument value if existent
+        if args.full_grab is not None:
+            full_grab = args.full_grab
+        
+        # Set only_defined default value
+        only_defined = False
+        # Overwrite with config file if defined
         if data.get("only_defined") is not None:
             only_defined = data.get("only_defined")
+        # Overwrite with argument value if existent
+        if args.only_defined is not None:
+            only_defined = args.only_defined
+        
+        # Set clone default value
+        clone = True
+        # Overwrite with config file if defined
         if data.get("clone") is not None:
             clone = data.get("clone")
+        # Overwrite with argument value if existent
+        if args.clone is not None:
+            clone = args.clone
 
         print("Building macro list")
         layers = data["macros"]
@@ -265,7 +288,7 @@ if __name__ == "__main__":
         dev = grab_device(devices, dev_name)
         if dev is not None:
             print(f"GRABBING FOR REMAPPING: {str(dev)}")
-            if args.clone or clone:
+            if clone:
                 ui = evdev.UInput.from_device(dev, name="Macropad Output")
             else: #previous behavior
                 ui = evdev.UInput(name="Macropad Output")
