@@ -1,4 +1,27 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 *-*
+#
+# uinput-macropad
+# Version: 0.1
+# Date: 20 Aug. 2023
+# Copyright: 2021, 2022 sebastiansam55
+# Copyright: 2023 Lurgainn
+#
+# LICENSE:
+#
+# This file is part of uinput-macropad.
+#
+# uinput-macropad is free software: you can redistribute it and/or modify it under the terms of the
+# GNU General Public License as published by the Free Software Foundation, either
+# version 3 of the License, or (at your option) any later version.
+#
+# uinput-macropad is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with uinput-macropad.
+# If not, see <https://www.gnu.org/licenses/>. 
+#
 
 import os
 import sys
