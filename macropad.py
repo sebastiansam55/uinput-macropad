@@ -178,78 +178,79 @@ def event_loop(keybeeb, layers, macros):
     except OSError:
         print("device disconnected!")
 
-parser = argparse.ArgumentParser(description="""UInput Macropad""")
-parser.add_argument('config', help="Path to config file")
-parser.add_argument('-v', '--verbose', action='store_true', default=False, help="Enable verbose logging")
-# command line behavior should be to take priority over config file settings
-parser.add_argument('-c', '--clone', action="store_true", default=False, help="Creates the UInput device with the capability of the device we're grabbing")
-#TODO
-#parser.add_argument('-d', '--dev_name', help="The device name (in quotes) that you want to read/grab from")
-#parser.add_argument('-od', '--only_defined', help="")
-#parser.add_argument('-fg', '--full_grab', help="Absorbs all signals coming from device")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="""UInput Macropad""")
+    parser.add_argument('config', help="Path to config file")
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, help="Enable verbose logging")
+    # command line behavior should be to take priority over config file settings
+    parser.add_argument('-c', '--clone', action="store_true", default=False, help="Creates the UInput device with the capability of the device we're grabbing")
+    #TODO
+    #parser.add_argument('-d', '--dev_name', help="The device name (in quotes) that you want to read/grab from")
+    #parser.add_argument('-od', '--only_defined', help="")
+    #parser.add_argument('-fg', '--full_grab', help="Absorbs all signals coming from device")
 
-args = parser.parse_args()
-
-
-if args.config:
-    print(f"Loading config from: {args.config}")
-    if args.verbose:
-        print(f"Command line args: {args}")
-    # try:
-    f = open(args.config, 'r')
-    data = json.loads(f.read())
-    dev_name = data.get("dev_name")
-    if data.get("full_grab") is not None:
-        full_grab = data.get("full_grab")
-    if data.get("only_defined") is not None:
-        only_defined = data.get("only_defined")
-    if data.get("clone") is not None:
-        clone = data.get("clone")
-
-    print("Building macro list")
-    layers = data["macros"]
-    macros = []
-    for layer in layers:
-        layer_macros = []
-        for macro_info in layers[layer]:
-            # print(macro_info)
-            macro = {"name":None, "keys":None, "type":None, "info":None}
-            macro['name'] = macro_info[0]
-            macro['keys'] = macro_info[1]
-            macro['type'] = macro_info[2]
-            macro['info'] = macro_info[3]
-
-            layer_macros.append(macro)
-        macros.append({layer:layer_macros})
-        # macros.append(layer_macros)
-
-    layer_info = []
-    for layer in data['layers']:
-        lay = {"name":None, "keys":None}
-        lay['name'] = layer[0]
-        lay['keys'] = layer[1]
-        layer_info.append(lay)
-
-            
-    print(f"Macro list by layer: {macros}")
-    print(f"Layer swap hotkey list: {layer_info}")
-
-    # except:
-        # sys.exit("Error loading config files")
+    args = parser.parse_args()
 
 
-time.sleep(1)
+    if args.config:
+        print(f"Loading config from: {args.config}")
+        if args.verbose:
+            print(f"Command line args: {args}")
+        # try:
+        f = open(args.config, 'r')
+        data = json.loads(f.read())
+        dev_name = data.get("dev_name")
+        if data.get("full_grab") is not None:
+            full_grab = data.get("full_grab")
+        if data.get("only_defined") is not None:
+            only_defined = data.get("only_defined")
+        if data.get("clone") is not None:
+            clone = data.get("clone")
 
-while True:
-    devices = get_devices()
-    dev = grab_device(devices, dev_name)
-    if dev is not None:
-        print(f"GRABBING FOR REMAPPING: {str(dev)}")
-        if args.clone or clone:
-            ui = evdev.UInput.from_device(dev, name="Macropad Output")
-        else: #previous behavior
-            ui = evdev.UInput(name="Macropad Output")
-        if full_grab: dev.grab()
-        event_loop(dev, layer_info, macros)
-    print("Device probably was disconnected")
-    time.sleep(5)
+        print("Building macro list")
+        layers = data["macros"]
+        macros = []
+        for layer in layers:
+            layer_macros = []
+            for macro_info in layers[layer]:
+                # print(macro_info)
+                macro = {"name":None, "keys":None, "type":None, "info":None}
+                macro['name'] = macro_info[0]
+                macro['keys'] = macro_info[1]
+                macro['type'] = macro_info[2]
+                macro['info'] = macro_info[3]
+
+                layer_macros.append(macro)
+            macros.append({layer:layer_macros})
+            # macros.append(layer_macros)
+
+        layer_info = []
+        for layer in data['layers']:
+            lay = {"name":None, "keys":None}
+            lay['name'] = layer[0]
+            lay['keys'] = layer[1]
+            layer_info.append(lay)
+
+                
+        print(f"Macro list by layer: {macros}")
+        print(f"Layer swap hotkey list: {layer_info}")
+
+        # except:
+            # sys.exit("Error loading config files")
+
+
+    time.sleep(1)
+
+    while True:
+        devices = get_devices()
+        dev = grab_device(devices, dev_name)
+        if dev is not None:
+            print(f"GRABBING FOR REMAPPING: {str(dev)}")
+            if args.clone or clone:
+                ui = evdev.UInput.from_device(dev, name="Macropad Output")
+            else: #previous behavior
+                ui = evdev.UInput(name="Macropad Output")
+            if full_grab: dev.grab()
+            event_loop(dev, layer_info, macros)
+        print("Device probably was disconnected")
+        time.sleep(5)
