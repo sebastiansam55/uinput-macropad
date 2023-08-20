@@ -35,6 +35,7 @@ import evdev
 from evdev import ecodes as e
 
 # Constants
+PROGNAME = 'UInput Macropad'
 VERSION = '0.1'
 DEFAULT_CONFIG_FILE = '~/.config/uinput-macropad/config.json'
 
@@ -186,13 +187,13 @@ def event_loop(keybeeb, layers, macros):
 if __name__ == "__main__":
     # Create arguments parser
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
-        description="UInput Macropad ver. " + VERSION + "\n(standard path of config file is " + DEFAULT_CONFIG_FILE + ")",\
-        epilog="Copyright: 2021, 2022 sebastiansam55\nCopyright: 2023 Lurgainn\nLicensed under the terms of the GNU General Public License version 3")
+        description = PROGNAME + "ver. " + VERSION + "\n(standard path of config file is " + DEFAULT_CONFIG_FILE + ")",\
+        epilog = "Copyright: 2021, 2022 sebastiansam55\nCopyright: 2023 Lurgainn\nLicensed under the terms of the GNU General Public License version 3")
     # Set the arguments
-    parser.add_argument('-f', '--file-config', help="Path to alternative config file")
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, help="Enable verbose logging")
+    parser.add_argument('-f', '--file-config', help = "Path to alternative config file")
+    parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = "Enable verbose logging")
     # command line behavior should be to take priority over config file settings
-    parser.add_argument('-c', '--clone', action="store_true", default=False, help="Creates the UInput device with the capability of the device we're grabbing")
+    parser.add_argument('-c', '--clone', action = "store_true", default = False, help = "Creates the UInput device with the capability of the device we're grabbing")
     #TODO
     #parser.add_argument('-d', '--dev_name', help="The device name (in quotes) that you want to read/grab from")
     #parser.add_argument('-od', '--only_defined', help="")
@@ -210,10 +211,13 @@ if __name__ == "__main__":
         print(f"Loading config from: {config_file}")
         if args.verbose:
             print(f"Command line args: {args}")
-        # try:
-        f = open(config_file, 'r')
-        data = json.loads(f.read())
-        f.close()
+        try:
+            f = open(config_file, 'r')
+            data = json.loads(f.read())
+            f.close()
+        except:
+            print(f"Error loading config file '{config_file}'")
+            sys.exit(2)
         dev_name = data.get("dev_name")
         if data.get("full_grab") is not None:
             full_grab = data.get("full_grab")
@@ -246,15 +250,12 @@ if __name__ == "__main__":
             lay['keys'] = layer[1]
             layer_info.append(lay)
 
-                
         print(f"Macro list by layer: {macros}")
         print(f"Layer swap hotkey list: {layer_info}")
 
-        # except:
-            # sys.exit("Error loading config files")
     else:
-        print(f"Config file not found!")
-        sys.exit(0)
+        print(f"Config file '{config_file}' not found!")
+        sys.exit(1)
 
 
     time.sleep(1)
