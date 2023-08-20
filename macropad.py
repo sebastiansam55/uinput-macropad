@@ -139,7 +139,7 @@ def event_loop(keybeeb, layers, macros):
                 mtype, minfo = get_macro_info(mname, layer)
                 if mtype == "cmd":
                     print(f"Executing macro: ", mname, " Command:", minfo)
-                    subprocess.Popen(minfo)
+                    subprocess.Popen(minfo, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = os.setpgrp)
                 elif mtype == "key":
                     print("Executing macro: ", mname, " Key:", minfo)
                     ui.write(e.EV_KEY, minfo[0], 1)
