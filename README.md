@@ -1,31 +1,38 @@
 # uinput-macropad
 Grabs an entire `/dev/input/event` device to be used as a "macropad". You can run commands on key press as well as rudimentary key event send support. More features are always coming!
 
+## Requirements
+Python version >=3.9
+
 ## Installation
-`pip3 install evdev`
+If necessary, run `pip3 install evdev`. After that copy the file `macropad.py` wherever you want and set the executable flag. If you choice a folder in your PATH, then you'll be able to launch the program as a normal command without specifying the complete path.
 
-Make sure that your user is in the `input` group:
+## Permissions
+Make sure that your user is in the `input` group. If it's not already so, type the following commands:  
+1. `sudo usermod -a -G input <user>` (substitute <user> with your username)  
+2. Reboot.  
 
-`sudo usermod -a -G input <user>`
-
-REBOOT.
-
-If it is still giving you trouble I have had to `chmod 660 /dev/input` before in some of my testing. Also reboot after you do this. Always reboot.
-
-You can also just always run the program as root. Understanding that any scripts/files run by the program will ALSO be run as root.
+If it is still giving you troubles, you have to:  
+1. Create e new group `uinput` with the comand `sudo groupdadd -f uinput`  
+2. Add yourself to the new group with the comand `sudo gpasswd -a <user> uinput` (substitute <user> with your username)  
+3. In `/etc/udev/rules.d/` create a new rule file (for example `99-uinput.rules` and within put the row `KERNEL=="uinput", GROUP="uinput", MODE="0660"`)  
+4. Reboot  
+ 
+WARNING: you can also just always run the program as root, but understand that any scripts/files run by the program will ALSO be run as root, and generally this is a **BIG SECURITY THREAT!**
 
 ## Usage
-Make sure you are not grabbing the main keyboard that you use for input as this can lock you with out a way to kill the program. 
+If you already set the executable flag and put the program's folder in PATH then you can simply type `macropad.py`, else you need to type `python3 /full/path/to/macropad.py`, where `/full/path/to/` is the full path to the folder where you put the program file.
 
-Assuming you have your config file created correctly;
+`macropad.py -h` will show a short message help.
 
-`python3 macropad.py config.json`
+While creating your config file in JSON format, make particular attention if you are grabbing the main keyboard that you use for input as this can lock you without a way to kill the program.
 
-Is all that you need to run. See section below for config file format. There is an example config provided in this repo as well.
-
-
+Assuming you have your config file created correctly;  
+1. If the config file is `~/.config/uinput-macropad/config.json` then you can simply run `macropad.py`  
+2. If the config file is elsewhere, then you have to run `macropad.py -f /full/path/to/<config file name>`  
 
 ## config file format
+There is an example config provided in this repo.
 ```
 {
     "macros": {
@@ -59,9 +66,9 @@ There are currently 4 different types of macros supported;
 4. `keycomb`
     * a list of events. There are currently 4 different events you can send depending on the data type used. 
         - If item in the list is a `int` it will be sent as an keydown or keyup signal depending on the sign. (+/- -> down/up)
-        - If the item is a `float` (has a decimal point) it will be used to sleep the program for the specified amount of time. This is useful for macros that are can't be sent all at once. I have found that 0.25 is usually enough for most programs.
+        - If the item is a `float` (has a decimal point) it will be used to sleep the program for the specified amount of time. This is useful for macros that are can't be sent all at once. Generally 0.25 is usually enough for most programs.
         - If the item is a `list` the program will send the events in a similar fashion as to the `keylist` type of macro.
-    * A keydown event is sent by the keycode being negative; a keyup event is sent for positive keycodes.
+    * A keydown event is sent by the keycode being positive; a keyup event is sent for negative keycodes.
     * If you wanted to send Ctrl+A: 
         - `[29,30,-29,-30]`
         - `29` is the keycode for left ctrl, since it is positive it will be sent as a key down event.
@@ -81,22 +88,19 @@ If you want to find out more about what codes are sent when you can monitor your
 
 Each layer can be configured to be swapped to with the press of a button[s]. This is controlled in the `dev_name` variable. In order to determine the name of your device you can run `evtest` with it unplugged and then with it plugged in, comparing the list to find the new device.
 
-`full_grab` - All signals are sent to only this program. Useful for disabling keys.
+`full_grab` - All signals are sent to this program only. Useful for disabling keys.
 
 Determines if the `evdev` device is "grabbed". If this is not set as true the key events generated naturally through the use of the device will also be sent. (this is not recommended unless you know what you are doing.). By default this will be set to True.
 
 `only_defined` - Will unmapped keystrokes be sent?
 
-Determines if the key events that are not bound to a macro are still sent. This means that if you had say a full size keyboard with a numpad you could macro-define all of the keypad keys and set `only_defined` to false and still have regular use of the rest of the keyboard! 
+Determines if the key events that are not bound to a macro are still sent. This means that if you had say a full size keyboard with a numpad you could macro-define all of the keypad keys and set `only_defined` to false and still have regular use of the rest of the keyboard!  By default this will be set to False
 
 `clone` - Whether the created UInput device will clone the capabilities of the device you are grabbing.
-May be needed if you are having issues with mouse events
-
-
-Very cool. I have it set to default to true however.
+May be needed if you are having issues with mouse events.  By default this will be set to True
 
 ## Real world usage example:
-I use the sublime livereload and live preview plugins when writing readmes (including this one!). This macro is included in the config, I recommend spacing it in similar fashion as I have, breaking it up step by step makes it much easier to understand what is or is not happening. I like to puncuate each step with a `0.25`s wait.
+For example, to use the livereload and live preview plugins when writing readmes (including this one!). This macro is included in the config, It's recommended to spacing it in similar fashion as below, breaking it up step by step makes it much easier to understand what is or is not happening. It's better to punctuate each step with a `0.25`s wait.
 
 
 The process to enable them is as follows;
@@ -114,21 +118,19 @@ The process to enable them is as follows;
 | 10. | Press enter | `[28], 0.25` |
 
 
-Note the liberal usage of the sleep function. They could probably be tuned to make the macro go faster but I'm more concerned with reliability over speed. 10 steps with a 0.25 delay is 2.5 seconds. Compared to the 10+ it takes me otherwise (not to mention remembering what the names of the plugins are) it is a definite win. 
+Note the liberal usage of the sleep function. They could probably be tuned to make the macro go faster but it's preferable reliability over speed. 10 steps with a 0.25 delay is 2.5 seconds. Compared to the 10+ it takes otherwise (not to mention remembering what the names of the plugins are) it is a definite win. 
 
 ## Logitech MX Master 3 mods
-I have a config file in this repo (logimxmaster3.json) that describes some remaps that I find useful. It's self explanatory if you've programmed it.
+There's a config file in this repo (logimxmaster3.json) that describes some remaps that can be useful. It's self explanatory if you've programmed it.
 macros on layer1:
 * copy - remaps the "back" button to be ctrl C via the "keycomb" functionality, basically it presses down ctrl then c and then releases in the same order. This makes a ctrl-c function that is nearly indistinguishable from genine ones.
 * paste - remaps the "forward" button to send ctrl V via the "keycomb" functionality.
-* hscoll - converts the side way scroll wheel to do arrow keys. The best part is that the arrow keys will essentially scroll any where the regular hscroll would but it comes with the added benefit of it passing through virtualbox and any RDP client I have tried. 
+* hscoll - converts the side way scroll wheel to do arrow keys. The best part is that the arrow keys will essentially scroll any where the regular hscroll would but it comes with the added benefit of it passing through virtualbox and any RDP client. 
 * disablehscroll - disposes of the scroll events that are normally sent.
-
-Pretty cool if I do say so myself
 
 ## Notes:
 
-The program is written based on my [uinput-keyboard-mapper]() meaning it is able to survive device disconnects. 
+The program is written based on sebastiansam55's [uinput-keyboard-mapper]() meaning it is able to survive device disconnects. 
 
 ## TODO:
 Suggestions welcome!
