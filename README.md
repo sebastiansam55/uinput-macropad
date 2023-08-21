@@ -18,7 +18,7 @@ If it is still giving you troubles, you have to:
 3. In `/etc/udev/rules.d/` create a new rule file (for example `99-uinput.rules` and within put the row `KERNEL=="uinput", GROUP="uinput", MODE="0660"`)  
 4. Reboot  
  
-WARNING: you can also just always run the program as root, but understand that any scripts/files run by the program will ALSO be run as root, and generally this is a BIG SECURITY THREAT!
+WARNING: you can also just always run the program as root, but understand that any scripts/files run by the program will ALSO be run as root, and generally this is a **BIG SECURITY THREAT!**
 
 ## Usage
 If you already set the executable flag and put the program's folder in PATH then you can simply type `macropad.py`, else you need to type `python3 /full/path/to/macropad.py`, where `/full/path/to/` is the full path to the folder where you put the program file.
