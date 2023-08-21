@@ -9,14 +9,14 @@ If necessary, run `pip3 install evdev`. After that copy the file `macropad.py` w
 
 ## Permissions
 Make sure that your user is in the `input` group. If it's not already so, type the following commands:  
-(1) `sudo usermod -a -G input <user>` (substitute <user> with your username)  
-(2) Reboot.  
+1. `sudo usermod -a -G input <user>` (substitute <user> with your username)  
+2. Reboot.  
 
 If it is still giving you troubles, you have to:  
-(1) Create e new group `uinput` with the comand `sudo groupdadd -f uinput`  
-(2) Add yourself to the new group with the comand `sudo gpasswd -a <user> uinput` (substitute <user> with your username)  
-(3) In `/etc/udev/rules.d/` create a new rule file (for example `99-uinput.rules` and within put the row `KERNEL=="uinput", GROUP="uinput", MODE="0660"`)  
-(4) Reboot  
+1. Create e new group `uinput` with the comand `sudo groupdadd -f uinput`  
+2. Add yourself to the new group with the comand `sudo gpasswd -a <user> uinput` (substitute <user> with your username)  
+3. In `/etc/udev/rules.d/` create a new rule file (for example `99-uinput.rules` and within put the row `KERNEL=="uinput", GROUP="uinput", MODE="0660"`)  
+4. Reboot  
  
 WARNING: you can also just always run the program as root, but understand that any scripts/files run by the program will ALSO be run as root, and generally this is a BIG SECURITY THREAT!
 
@@ -28,8 +28,8 @@ If you already set the executable flag and put the program's folder in PATH then
 While creating your config file in JSON format, make particular attention if you are grabbing the main keyboard that you use for input as this can lock you without a way to kill the program.
 
 Assuming you have your config file created correctly;  
-(1) If the config file is `~/.config/uinput-macropad/config.json` then you can simply run `macropad.py`  
-(2) If the config file is elsewhere, then you have to run `macropad.py -f /full/path/to/<config file name>`  
+1. If the config file is `~/.config/uinput-macropad/config.json` then you can simply run `macropad.py`  
+2. If the config file is elsewhere, then you have to run `macropad.py -f /full/path/to/<config file name>`  
 
 ## config file format
 There is an example config provided in this repo.
