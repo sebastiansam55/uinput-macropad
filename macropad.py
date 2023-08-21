@@ -190,7 +190,7 @@ if __name__ == "__main__":
         description = PROGNAME + "ver. " + VERSION + "\n(standard path of config file is " + DEFAULT_CONFIG_FILE + ")",\
         epilog = "Copyright: 2021, 2022 sebastiansam55\nCopyright: 2023 Lurgainn\nLicensed under the terms of the GNU General Public License version 3")
     # Set the arguments
-    parser.add_argument('-f', '--file-config', help = "Path to alternative config file")
+    parser.add_argument('-c', '--config-file', help = "Path to alternative config file")
     parser.add_argument('-v', '--verbose', action = 'store_true', help = "Enable verbose logging (default = False)")
     # command line behavior wiil take priority over config file settings
     parser.add_argument('--full-grab', action = argparse.BooleanOptionalAction, help="Absorbs all signals coming from device (default = True)")
@@ -204,8 +204,8 @@ if __name__ == "__main__":
     # Default path to config file
     config_file = os.path.expanduser(DEFAULT_CONFIG_FILE)
     # Set alternative path to config file
-    if args.file_config is not None:
-        config_file = args.file_config
+    if args.config_file is not None:
+        config_file = args.config_file
     # Check if config file exists
     if os.path.isfile(config_file):
         print(f"Loading config from: {config_file}")
