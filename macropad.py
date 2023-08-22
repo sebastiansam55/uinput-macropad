@@ -92,8 +92,7 @@ def check_held_keys(held_keys, macros):
 def get_macro_info(mname, layer):
     for macro in layer:
         if macro['name']==mname:
-            if(args.verbose):
-                log.info("MACRO FOUND")
+            log.debug("MACRO FOUND")
             return macro['type'], macro['info']
     return None
 
