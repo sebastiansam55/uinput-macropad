@@ -30,6 +30,8 @@ import time
 import argparse
 import json
 import subprocess
+import logging
+from logging.handlers import RotatingFileHandler
 
 import evdev
 from evdev import ecodes as e
@@ -38,6 +40,7 @@ from evdev import ecodes as e
 PROGNAME = 'UInput Macropad'
 VERSION = '0.1'
 DEFAULT_CONFIG_FILE = '~/.config/uinput-macropad/config.json'
+LOG_FILE_PATH = '~/.local/state/'
 
 def get_devices():
     return [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -90,7 +93,7 @@ def get_macro_info(mname, layer):
     for macro in layer:
         if macro['name']==mname:
             if(args.verbose):
-                print("MACRO FOUND")
+                log.info("MACRO FOUND")
             return macro['type'], macro['info']
     return None
 
@@ -107,7 +110,7 @@ def event_loop(keybeeb, layers, macros):
         toggle_time = time.time()
         toggle_delay = 0.25
         layer = macros[0][layers[0]['name']] #grab first layer name
-        print("Current layer:",layer)
+        log.debug("Current layer: " + str(layer))
 
         for ev in keybeeb.read_loop():
             mname = None
@@ -116,7 +119,7 @@ def event_loop(keybeeb, layers, macros):
             if layer_swap and (time.time()-toggle_time)>=toggle_delay:
                 toggle_time = time.time()
                 layer = switch_layer(layer_swap, macros)
-                print("Layer Swap", layer)
+                log.debug("Layer Swap" + str(layer))
 
             mname = check_held_keys(keybeeb.active_keys(), layer)
             if mname == None: # if none returned check if raw key code is present
@@ -124,29 +127,29 @@ def event_loop(keybeeb, layers, macros):
                 if mname:
                     mtype, minfo = get_macro_info(mname, layer)
                     if mtype=="button":
-                        print(f"Executing button macro: {mname} Command: {minfo}")
+                        log.debug(f"Executing button macro: {mname} Command: {minfo}")
                         if(str(ev.value) in minfo):
                             ui.write(e.EV_KEY, minfo[str(ev.value)], 1)
                             ui.write(e.EV_KEY, minfo[str(ev.value)], 0)
                             ui.write(e.EV_SYN, 0, 0)
                             continue
                     elif mtype=="dispose": 
-                        print(f"Disposing of event: {mname}")
+                        log.debug(f"Disposing of event: {mname}")
                         continue
                 mname = None
             if mname and (time.time()-toggle_time)>=toggle_delay:
                 toggle_time = time.time()
                 mtype, minfo = get_macro_info(mname, layer)
                 if mtype == "cmd":
-                    print(f"Executing macro: ", mname, " Command:", minfo)
+                    log.debug(f"Executing macro: " + str(mname) + " Command:" + str(minfo))
                     subprocess.Popen(minfo, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = os.setpgrp)
                 elif mtype == "key":
-                    print("Executing macro: ", mname, " Key:", minfo)
+                    log.debug("Executing macro: " + str(mname), " Key:" + str(minfo))
                     ui.write(e.EV_KEY, minfo[0], 1)
                     ui.write(e.EV_KEY, minfo[0], 0)
                     ui.write(e.EV_SYN, 0, 0)
                 elif mtype == "keylist":
-                    print(f"Executing macro: {mname} keylist: {minfo}")
+                    log.debug(f"Executing macro: {mname} keylist: {minfo}")
                     for keycode in minfo:
                         ui.write(e.EV_KEY, keycode, 1)
                         ui.write(e.EV_KEY, keycode, 0)
@@ -173,16 +176,16 @@ def event_loop(keybeeb, layers, macros):
                         # time.sleep(0.01)
 
                 elif mtype == "dispose":
-                    print(f"Disposing of event: {mname}")
+                    log.debug(f"Disposing of event: {mname}")
                     continue
 
             if (not only_defined and not mname):
-                if args.verbose:
-                    print(f"Command - TYPE:{ev.type} CODE:{ev.code} VALUE:{ev.value}")
+                log.debug(f"Command - TYPE:{ev.type} CODE:{ev.code} VALUE:{ev.value}")
                 ui.write(ev.type, ev.code, ev.value)
             #print(ev)
     except OSError:
-        print("device disconnected!")
+        log.warning("device disconnected!")
+        sys.stdout.write("Device probably was disconnected")
 
 if __name__ == "__main__":
     # Create arguments parser
@@ -198,8 +201,29 @@ if __name__ == "__main__":
     parser.add_argument('--clone', action = argparse.BooleanOptionalAction, help = "Creates the UInput device with the capability of the device we're grabbing (default = True)")
     #TODO
     #parser.add_argument('-d', '--dev_name', help="The device name (in quotes) that you want to read/grab from")
-    
+    #
+    # Parse arguments
     args = parser.parse_args()
+
+    # Create logger
+    log = logging.getLogger(PROGNAME)
+    # Set verbosity
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.WARNING)
+    # Set log file's path
+    log_file = os.path.expanduser(LOG_FILE_PATH)
+    log_file = os.path.join(log_file, PROGNAME)
+    if not os.path.isdir(log_file):
+        os.makedirs(log_file)
+    log_file = os.path.join(log_file, PROGNAME + '.log')
+    # Max 3 files of ~1MB each
+    handler = RotatingFileHandler(log_file, maxBytes=10**6, backupCount=3, encoding='utf-8')
+    # Format of logging strings
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
 
     # Default path to config file
     config_file = os.path.expanduser(DEFAULT_CONFIG_FILE)
@@ -208,16 +232,16 @@ if __name__ == "__main__":
         config_file = args.config_file
     # Check if config file exists
     if os.path.isfile(config_file):
-        print(f"Loading config from: {config_file}")
-        if args.verbose:
-            print(f"Command line args: {args}")
+        log.info(f"Loading config from: {config_file}")
+        log.debug(f"Command line args: {args}")
         # Load config file
         try:
             f = open(config_file, 'r')
             data = json.loads(f.read())
             f.close()
         except:
-            print(f"Error loading config file '{config_file}'")
+            log.error(f"Error loading config file '{config_file}'")
+            sys.stderr.write(f"Error loading config file '{config_file}'\n")
             sys.exit(2)
         # Get device to intercept
         dev_name = data.get("dev_name")
@@ -249,13 +273,13 @@ if __name__ == "__main__":
         if args.clone is not None:
             clone = args.clone
 
-        print("Building macro list")
+        log.debug("Building macro list")
         layers = data["macros"]
         macros = []
         for layer in layers:
             layer_macros = []
             for macro_info in layers[layer]:
-                # print(macro_info)
+                log.debug(str(macro_info))
                 macro = {"name":None, "keys":None, "type":None, "info":None}
                 macro['name'] = macro_info[0]
                 macro['keys'] = macro_info[1]
@@ -273,11 +297,12 @@ if __name__ == "__main__":
             lay['keys'] = layer[1]
             layer_info.append(lay)
 
-        print(f"Macro list by layer: {macros}")
-        print(f"Layer swap hotkey list: {layer_info}")
+        log.debug(f"Macro list by layer: {macros}")
+        log.debug(f"Layer swap hotkey list: {layer_info}")
 
     else:
-        print(f"Config file '{config_file}' not found!")
+        log.error(f"Config file '{config_file}' not found!")
+        sys.stderr.write(f"Config file '{config_file}' not found!\n")
         sys.exit(1)
 
 
@@ -287,12 +312,13 @@ if __name__ == "__main__":
         devices = get_devices()
         dev = grab_device(devices, dev_name)
         if dev is not None:
-            print(f"GRABBING FOR REMAPPING: {str(dev)}")
+            log.info(f"GRABBING FOR REMAPPING: {str(dev)}")
             if clone:
                 ui = evdev.UInput.from_device(dev, name="Macropad Output")
             else: #previous behavior
                 ui = evdev.UInput(name="Macropad Output")
             if full_grab: dev.grab()
             event_loop(dev, layer_info, macros)
-        print("Device probably was disconnected")
+        log.warning("Device probably was disconnected")
+        sys.stdout.write("Device probably was disconnected")
         time.sleep(5)
