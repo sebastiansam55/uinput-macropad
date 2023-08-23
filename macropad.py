@@ -41,6 +41,7 @@ PROGNAME = 'UInput Macropad'
 VERSION = '0.1'
 DEFAULT_CONFIG_FILE = '~/.config/uinput-macropad/config.json'
 LOG_FILE_PATH = '~/.local/state/'
+LOG_FILE_NAME = 'uinput-macropad'
 
 def get_devices():
     return [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -213,10 +214,10 @@ if __name__ == "__main__":
         log.setLevel(logging.WARNING)
     # Set log file's path
     log_file = os.path.expanduser(LOG_FILE_PATH)
-    log_file = os.path.join(log_file, PROGNAME)
+    log_file = os.path.join(log_file, LOG_FILE_NAME)
     if not os.path.isdir(log_file):
         os.makedirs(log_file)
-    log_file = os.path.join(log_file, PROGNAME + '.log')
+    log_file = os.path.join(log_file, LOG_FILE_NAME + '.log')
     # Max 3 files of ~1MB each
     handler = RotatingFileHandler(log_file, maxBytes=10**6, backupCount=3, encoding='utf-8')
     # Format of logging strings
