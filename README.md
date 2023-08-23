@@ -15,21 +15,21 @@ Make sure that your user is in the `input` group. If it's not already so, type t
 If it is still giving you troubles, you have to:  
 1. Create e new group `uinput` with the comand `sudo groupdadd -f uinput`  
 2. Add yourself to the new group with the comand `sudo gpasswd -a <user> uinput` (substitute <user> with your username)  
-3. In `/etc/udev/rules.d/` create a new rule file (for example `99-uinput.rules` and within put the row `KERNEL=="uinput", GROUP="uinput", MODE="0660"`)  
+3. In `/etc/udev/rules.d/` create a new rule file (for example `99-uinput.rules`) and within put the row `KERNEL=="uinput", GROUP="uinput", MODE="0660"`  
 4. Reboot  
  
-WARNING: you can also just always run the program as root, but understand that any scripts/files run by the program will ALSO be run as root, and generally this is a **BIG SECURITY THREAT!**
+**WARNING:** you can also just always run the program as root, but understand that any scripts/files run by the program will ALSO be run as root, and generally this is a **BIG SECURITY THREAT!**
 
 ## Usage
 If you already set the executable flag and put the program's folder in PATH then you can simply type `macropad.py`, else you need to type `python3 /full/path/to/macropad.py`, where `/full/path/to/` is the full path to the folder where you put the program file.
 
 `macropad.py -h` will show a short message help.
 
-While creating your config file in JSON format, make particular attention if you are grabbing the main keyboard that you use for input as this can lock you without a way to kill the program.
+While creating your config file in JSON format, make particular attention if you are grabbing the main keyboard that you use for input, as this can lock you without a way to kill the program.
 
 Assuming you have your config file created correctly;  
 1. If the config file is `~/.config/uinput-macropad/config.json` then you can simply run `macropad.py`  
-2. If the config file is elsewhere, then you have to run `macropad.py -f /full/path/to/<config file name>`  
+2. If the config file is elsewhere, then you have to run `macropad.py -c /full/path/to/<config file name>`  
 
 ## config file format
 There is an example config provided in this repo.
@@ -84,7 +84,7 @@ There are currently 4 different types of macros supported;
 6. `dispose`
     * Will dispose of events compelety when used in combination with `full_grab`
 
-If you want to find out more about what codes are sent when you can monitor your "main" keyboards output with `evtest`. In order to debug the output of your macros you can also monitor the output of the device created by this program with `evtest`.
+If you want to find out more about what codes are sent when you press keys, you can monitor your "main" keyboards output with `evtest`. In order to debug the output of your macros you can also monitor the output of the device created by this program with `evtest`.
 
 Each layer can be configured to be swapped to with the press of a button[s]. This is controlled in the `dev_name` variable. In order to determine the name of your device you can run `evtest` with it unplugged and then with it plugged in, comparing the list to find the new device.
 
@@ -138,7 +138,7 @@ Suggestions welcome!
 Prebuilt configs that are general enough to have mass appeal can be added as PRs if any one is adventerous enough to do so. 
 
 ## Breaking changes
-Nothing is guarnteed compatibitly wise 
+Nothing is guaranteed compatibitly wise 
 
 
 ## Too complicated?
