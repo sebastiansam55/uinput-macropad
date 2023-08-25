@@ -43,6 +43,16 @@ DEFAULT_CONFIG_FILE = '~/.config/uinput-macropad/config.json'
 LOG_FILE_PATH = '~/.local/state/'
 LOG_FILE_NAME = 'uinput-macropad'
 
+# Global variables
+args = None             # Command line arguments
+log = None              # Logging manager
+config_file = None      # Config file
+dev_name = None         # Device to be grabbed
+full_grab = None        # All events are managed
+only_defined = None     # Send defined only
+clone = None            # Clone the device capabilities
+json_data = None        # Data from config file
+
 def get_devices():
     return [evdev.InputDevice(path) for path in evdev.list_devices()]
 
@@ -91,6 +101,8 @@ def check_held_keys(held_keys, macros):
     return None
 
 def get_macro_info(mname, layer):
+    global log         # Just for readibility
+
     for macro in layer:
         if macro['name']==mname:
             log.debug("MACRO FOUND")
@@ -105,6 +117,9 @@ def switch_layer(name, macros):
 
 
 def event_loop(keybeeb, layers, macros):
+    global only_defined
+    global log         # Just for readibility
+
     try:
         held_keys = []
         toggle_time = time.time()
@@ -187,7 +202,9 @@ def event_loop(keybeeb, layers, macros):
         log.warning("device disconnected!")
         sys.stdout.write("Device probably was disconnected")
 
-if __name__ == "__main__":
+def parse_arguments():
+    global args
+
     # Create arguments parser
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
         description = PROGNAME + "ver. " + VERSION + "\n(standard path of config file is " + DEFAULT_CONFIG_FILE + ")",\
@@ -204,8 +221,12 @@ if __name__ == "__main__":
     #
     # Parse arguments
     args = parser.parse_args()
+    return None
 
-    # Create logger
+def create_logger():
+    global log
+    global args         # Just for readibility
+
     log = logging.getLogger(PROGNAME)
     # Set verbosity
     if args.verbose:
@@ -224,86 +245,114 @@ if __name__ == "__main__":
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     log.addHandler(handler)
+    return None
 
+def load_config():
+    global json_data
+    global dev_name
+    global full_grab
+    global only_defined
+    global clone
+    global config_file          # Just for readibility
+    global log                  # Just for readibility
+    global args                 # Just for readibility
+
+    try:
+        f = open(config_file, 'r')
+        json_data = json.loads(f.read())
+        f.close()
+    except:
+        log.error(f"Error loading config file '{config_file}'")
+        sys.stderr.write(f"Error loading config file '{config_file}'\n")
+        return 2
+    # Get device to intercept
+    dev_name = json_data.get("dev_name")
+
+    # Set full_grab default value
+    full_grab = True
+    # Overwrite with config file if defined
+    if json_data.get("full_grab") is not None:
+        full_grab = json_data.get("full_grab")
+    # Overwrite with argument value if existent
+    if args.full_grab is not None:
+        full_grab = args.full_grab
+    
+    # Set only_defined default value
+    only_defined = False
+    # Overwrite with config file if defined
+    if json_data.get("only_defined") is not None:
+        only_defined = json_data.get("only_defined")
+    # Overwrite with argument value if existent
+    if args.only_defined is not None:
+        only_defined = args.only_defined
+    
+    # Set clone default value
+    clone = True
+    # Overwrite with config file if defined
+    if json_data.get("clone") is not None:
+        clone = json_data.get("clone")
+    # Overwrite with argument value if existent
+    if args.clone is not None:
+        clone = args.clone
+    return 0
+
+if __name__ == "__main__":
+    # Parse program arguments
+    parse_arguments()
+    # Create logger
+    create_logger()
+    log.debug(f"Command line args: {args}")
     # Default path to config file
     config_file = os.path.expanduser(DEFAULT_CONFIG_FILE)
     # Set alternative path to config file
     if args.config_file is not None:
         config_file = args.config_file
+    log.info(f"Loading config from: {config_file}")
     # Check if config file exists
     if os.path.isfile(config_file):
-        log.info(f"Loading config from: {config_file}")
-        log.debug(f"Command line args: {args}")
         # Load config file
-        try:
-            f = open(config_file, 'r')
-            data = json.loads(f.read())
-            f.close()
-        except:
-            log.error(f"Error loading config file '{config_file}'")
-            sys.stderr.write(f"Error loading config file '{config_file}'\n")
-            sys.exit(2)
-        # Get device to intercept
-        dev_name = data.get("dev_name")
-
-        # Set full_grab default value
-        full_grab = True
-        # Overwrite with config file if defined
-        if data.get("full_grab") is not None:
-            full_grab = data.get("full_grab")
-        # Overwrite with argument value if existent
-        if args.full_grab is not None:
-            full_grab = args.full_grab
-        
-        # Set only_defined default value
-        only_defined = False
-        # Overwrite with config file if defined
-        if data.get("only_defined") is not None:
-            only_defined = data.get("only_defined")
-        # Overwrite with argument value if existent
-        if args.only_defined is not None:
-            only_defined = args.only_defined
-        
-        # Set clone default value
-        clone = True
-        # Overwrite with config file if defined
-        if data.get("clone") is not None:
-            clone = data.get("clone")
-        # Overwrite with argument value if existent
-        if args.clone is not None:
-            clone = args.clone
-
-        log.debug("Building macro list")
-        layers = data["macros"]
-        macros = []
-        for layer in layers:
-            layer_macros = []
-            for macro_info in layers[layer]:
-                log.debug(str(macro_info))
-                macro = {"name":None, "keys":None, "type":None, "info":None}
-                macro['name'] = macro_info[0]
-                macro['keys'] = macro_info[1]
-                macro['type'] = macro_info[2]
-                macro['info'] = macro_info[3]
-
-                layer_macros.append(macro)
-            macros.append({layer:layer_macros})
-            # macros.append(layer_macros)
-
-        layer_info = []
-        for layer in data['layers']:
-            lay = {"name":None, "keys":None}
-            lay['name'] = layer[0]
-            lay['keys'] = layer[1]
-            layer_info.append(lay)
-
-        log.debug(f"Macro list by layer: {macros}")
-        log.debug(f"Layer swap hotkey list: {layer_info}")
-
+        ret = load_config()
+        if ret != 0:
+            sys.exit(ret)
     else:
         log.error(f"Config file '{config_file}' not found!")
         sys.stderr.write(f"Config file '{config_file}' not found!\n")
         sys.exit(1)
+    
+    log.debug("Building macro list")
+    layers = json_data["macros"]
+    macros = []
+    for layer in layers:
+        log.debug("Layer (macros): " + str(layer))
+        layer_macros = []
+        k = 0
+        for macro_info in layers[layer]:
+            log.debug("Macro " + str(k) + ": " + str(macro_info))
+            k += 1
+            macro = {"name":None, "keys":None, "type":None, "info":None}
+            macro['name'] = macro_info[0]
+            macro['keys'] = macro_info[1]
+            macro['type'] = macro_info[2]
+            macro['info'] = macro_info[3]
+
+            layer_macros.append(macro)
+        macros.append({layer:layer_macros})
+        # macros.append(layer_macros)
+
+    layer_info = []
+    for layer in json_data['layers']:
+        log.debug("Layer (names): " + str(layer))
+        lay = {"name":None, "keys":None, "cmd": None}
+        lay['name'] = layer[0]
+        lay['keys'] = layer[1]
+        if len(layer) == 3:
+            lay['cmd'] = layer(2)
+        else:
+            lay['cmd'] = None
+        layer_info.append(lay)
+
+    log.debug(f"Macro list by layer: {macros}")
+    log.debug(f"Layer swap hotkey list: {layer_info}")
 
 
     time.sleep(1)
