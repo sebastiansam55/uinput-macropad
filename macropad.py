@@ -44,6 +44,9 @@ LOG_FILE_PATH = '~/.local/state/'
 LOG_FILE_NAME = 'uinput-macropad'
 
 # Global variables
+# (I know, global variables are evil, but
+# this isn't a very big program, so I think
+# that these few are manageable. Forgive me ;-)
 args = None             # Command line arguments
 log = None              # Logging manager
 config_file = None      # Config file
@@ -52,6 +55,8 @@ full_grab = None        # All events are managed
 only_defined = None     # Send defined only
 clone = None            # Clone the device capabilities
 json_data = None        # Data from config file
+macros = None           # Contain all macros
+layer_info = None       # Contain all layers
 
 def get_devices():
     return [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -115,6 +120,13 @@ def switch_layer(name, macros):
             return layer.get(name)
     return None
 
+def execute_layer_command(layers, name):
+    for layer in layers:
+        if layer.get('name') == name:
+            if layer.get('cmd') != None:
+                log.debug(f"Executing layer command: " + str(layer['name']) + " Command:" + str(layer['cmd']))
+                subprocess.Popen(layer['cmd'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = os.setpgrp)
+    return
 
 def event_loop(keybeeb, layers, macros):
     global only_defined
@@ -126,6 +138,8 @@ def event_loop(keybeeb, layers, macros):
         toggle_delay = 0.25
         layer = macros[0][layers[0]['name']] #grab first layer name
         log.debug("Current layer: " + str(layer))
+        # Execute optional command
+        execute_layer_command(layers, layers[0]['name'])
 
         for ev in keybeeb.read_loop():
             mname = None
@@ -135,6 +149,8 @@ def event_loop(keybeeb, layers, macros):
                 toggle_time = time.time()
                 layer = switch_layer(layer_swap, macros)
                 log.debug("Layer Swap" + str(layer))
+                # Execute optional command
+                execute_layer_command(layers, layer_swap)
 
             mname = check_held_keys(keybeeb.active_keys(), layer)
             if mname == None: # if none returned check if raw key code is present
@@ -156,10 +172,10 @@ def event_loop(keybeeb, layers, macros):
                 toggle_time = time.time()
                 mtype, minfo = get_macro_info(mname, layer)
                 if mtype == "cmd":
-                    log.debug(f"Executing macro: " + str(mname) + " Command:" + str(minfo))
+                    log.debug(f"Executing macro: {mname} Command: {minfo}")
                     subprocess.Popen(minfo, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = os.setpgrp)
                 elif mtype == "key":
-                    log.debug("Executing macro: " + str(mname), " Key:" + str(minfo))
+                    log.debug(f"Executing macro: {mname} Key: {minfo}")
                     ui.write(e.EV_KEY, minfo[0], 1)
                     ui.write(e.EV_KEY, minfo[0], 0)
                     ui.write(e.EV_SYN, 0, 0)
@@ -296,30 +312,10 @@ def load_config():
         clone = args.clone
     return 0
 
-if __name__ == "__main__":
-    # Parse program arguments
-    parse_arguments()
-    # Create logger
-    create_logger()
-    log.debug(f"Command line args: {args}")
-    # Default path to config file
-    config_file = os.path.expanduser(DEFAULT_CONFIG_FILE)
-    # Set alternative path to config file
-    if args.config_file is not None:
-        config_file = args.config_file
-    log.info(f"Loading config from: {config_file}")
-    # Check if config file exists
-    if os.path.isfile(config_file):
-        # Load config file
-        ret = load_config()
-        if ret != 0:
-            sys.exit(ret)
-    else:
-        log.error(f"Config file '{config_file}' not found!")
-        sys.stderr.write(f"Config file '{config_file}' not found!\n")
-        sys.exit(1)
-    
-    log.debug("Building macro list")
+def build_macro_list():
+    global macros
+    global layer_info
+
     layers = json_data["macros"]
     macros = []
     for layer in layers:
@@ -346,14 +342,41 @@ if __name__ == "__main__":
         lay['name'] = layer[0]
         lay['keys'] = layer[1]
         if len(layer) == 3:
-            lay['cmd'] = layer(2)
+            lay['cmd'] = layer[2]
         else:
             lay['cmd'] = None
         layer_info.append(lay)
 
     log.debug(f"Macro list by layer: {macros}")
     log.debug(f"Layer swap hotkey list: {layer_info}")
+    return
 
+if __name__ == "__main__":
+    # Parse program arguments
+    parse_arguments()
+    # Create logger
+    create_logger()
+    log.debug(f"Command line args: {args}")
+    # Default path to config file
+    config_file = os.path.expanduser(DEFAULT_CONFIG_FILE)
+    # Set alternative path to config file
+    if args.config_file is not None:
+        config_file = args.config_file
+    log.info(f"Loading config from: {config_file}")
+    # Check if config file exists
+    if os.path.isfile(config_file):
+        # Load config file
+        ret = load_config()
+        if ret != 0:
+            sys.exit(ret)
+    else:
+        log.error(f"Config file '{config_file}' not found!")
+        sys.stderr.write(f"Config file '{config_file}' not found!\n")
+        sys.exit(1)
+    
+    # Build macros list
+    log.debug("Building macros list")
+    build_macro_list()
 
     time.sleep(1)
 
