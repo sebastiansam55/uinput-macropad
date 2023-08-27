@@ -1,0 +1,18 @@
+{
+    "macros": {
+        "test1": [
+            ["macro1-1", [2], "cmd", ["python3", "test.py"]]
+        ],
+        "test2": [
+            ["macro2-1", [2], "cmd", ["python3", "test2.py"]]
+        ]
+    },
+    "layers": [
+        ["test1",[59], ["zenity", "--info", "--title=\"Layer swap\"", "--text=\"Layer 'test1'\"", "--timeout=2"]],
+        ["test2",[60], ["zenity", "--info", "--title=\"Layer swap\"", "--text=\"Layer 'test2'\"", "--timeout=2"]]
+    ],
+    "dev_name": "AT Translated Set 2 keyboard",
+    "only_defined": false,
+    "full_grab": true,
+    "clone": false
+}
