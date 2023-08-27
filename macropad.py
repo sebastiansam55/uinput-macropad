@@ -38,7 +38,7 @@ from evdev import ecodes as e
 
 # Constants
 PROGNAME = 'UInput Macropad'
-VERSION = '0.1'
+VERSION = '0.2'         # Until a stable release, this numeration will not follow version's common rules
 DEFAULT_CONFIG_FILE = '~/.config/uinput-macropad/config.json'
 LOG_FILE_PATH = '~/.local/state/'
 LOG_FILE_NAME = 'uinput-macropad'
@@ -223,7 +223,7 @@ def parse_arguments():
 
     # Create arguments parser
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,\
-        description = PROGNAME + "ver. " + VERSION + "\n(standard path of config file is " + DEFAULT_CONFIG_FILE + ")",\
+        description = PROGNAME + " ver." + VERSION + "\n(standard path of config file is " + DEFAULT_CONFIG_FILE + ")",\
         epilog = "Copyright: 2021, 2022 sebastiansam55\nCopyright: 2023 Lurgainn\nLicensed under the terms of the GNU General Public License version 3")
     # Set the arguments
     parser.add_argument('-c', '--config-file', help = "Path to alternative config file")
