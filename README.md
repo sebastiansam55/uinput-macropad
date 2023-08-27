@@ -31,8 +31,8 @@ Assuming you have your config file created correctly;
 1. If the config file is `~/.config/uinput-macropad/config.json` then you can simply run `macropad.py`  
 2. If the config file is elsewhere, then you have to run `macropad.py -c /full/path/to/<config file name>`  
 
-## config file format
-There is an example config provided in this repo.
+## Config file format without layer's commands
+There is an example config provided in this repo (`config.json`).
 ```
 {
     "macros": {
@@ -98,6 +98,36 @@ Determines if the key events that are not bound to a macro are still sent. This 
 
 `clone` - Whether the created UInput device will clone the capabilities of the device you are grabbing.
 May be needed if you are having issues with mouse events.  By default this will be set to True
+
+## Config file format with layer's commands
+There is an example config provided in this repo (`layers-commands.json`).
+```
+{
+    "macros": {
+        "test1": [
+            ["macro1-1", [2], "cmd", ["python3", "test.py"]]
+        ],
+        "test2": [
+            ["macro2-1", [2], "cmd", ["python3", "test2.py"]]
+        ]
+    },
+    "layers": [
+        ["test1",[59], ["zenity", "--info", "--title=\"Layer swap\"", "--text=\"Layer 'test1'\"", "--timeout=2"]],
+        ["test2",[60], ["zenity", "--info", "--title=\"Layer swap\"", "--text=\"Layer 'test2'\"", "--timeout=2"]]
+    ],
+    "dev_name": "AT Translated Set 2 keyboard",
+    "only_defined": false,
+    "full_grab": true,
+    "clone": false
+}
+```
+When the program start and set the first layer and whenever you swap layer, the associated command will be execute. For example, with this config file, when you select the first layer "test1", the command `zenity --info --title"Layer swap" --text"Layer 'test1' --timeout=2` will be executed and, if you have 'zenity' installed, for two seconds will be showed a little dialog with the text `Layer 'test1'`.  
+Associated commands are not mandatory, so you can have config files with some layer with commands and other layers without any, as well all layers with commands or without any. All combinations are possible.  
+All other settings are the same as explained before.  
+
+## Keycodes
+If you need to find the exact keycode that you want to use, both in a hotkey as output key, you can consult the following page:  
+[input-event-codes.h](https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h)  
 
 ## Real world usage example:
 For example, to use the livereload and live preview plugins when writing readmes (including this one!). This macro is included in the config, It's recommended to spacing it in similar fashion as below, breaking it up step by step makes it much easier to understand what is or is not happening. It's better to punctuate each step with a `0.25`s wait.
