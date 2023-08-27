@@ -121,7 +121,7 @@ There is an example config provided in this repo (`layers-commands.json`).
     "clone": false
 }
 ```
-When the program start and set the first layer and whenever you swap layer, the associated command will be execute. For example, with this config file, when you select the first layer "test1", the command `zenity --info --title"Layer swap" --text"Layer 'test1' --timeout=2` will be executed and, if you have 'zenity' installed, for two seconds will be showed a little dialog with the text `Layer 'test1'`.  
+When the program start and set the first layer and whenever you swap layer, the associated command will be executed. For example, with this config file, when you select the first layer "test1", the command `zenity --info --title"Layer swap" --text"Layer 'test1'" --timeout=2` will be executed and, if you have 'zenity' installed, for two seconds will be showed a little dialog with the text `Layer 'test1'`.  
 Associated commands are not mandatory, so you can have config files with some layer with commands and other layers without any, as well all layers with commands or without any. All combinations are possible.  
 All other settings are the same as explained before.  
 
