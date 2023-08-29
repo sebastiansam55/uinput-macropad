@@ -32,9 +32,11 @@ import json
 import subprocess
 import logging
 from logging.handlers import RotatingFileHandler
+import signal
 
 import evdev
 from evdev import ecodes as e
+from select import select
 
 # Constants
 PROGNAME = 'UInput Macropad'
@@ -57,6 +59,8 @@ clone = None            # Clone the device capabilities
 json_data = None        # Data from config file
 macros = None           # Contain all macros
 layer_info = None       # Contain all layers
+events_loop = True      # To control read events loop
+dev_connected = True    # To control read events loop
 
 def get_devices():
     return [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -130,93 +134,101 @@ def execute_layer_command(layers, name):
 
 def event_loop(keybeeb, layers, macros):
     global only_defined
-    global log         # Just for readibility
+    global dev_connected
+    global log          # Just for readibility
+    global events_loop  # Just for readibility
 
-    try:
-        held_keys = []
-        toggle_time = time.time()
-        toggle_delay = 0.25
-        layer = macros[0][layers[0]['name']] #grab first layer name
-        log.debug("Current layer: " + str(layer))
-        # Execute optional command
-        execute_layer_command(layers, layers[0]['name'])
+    # Initial setup
+    held_keys = []
+    toggle_time = time.time()
+    toggle_delay = 0.25
+    layer = macros[0][layers[0]['name']] #grab first layer name
+    log.debug("Current layer: " + str(layer))
+    # Execute optional command
+    execute_layer_command(layers, layers[0]['name'])
+    # Loop to read events
+    while events_loop and dev_connected:
+        select([keybeeb], [], [], 0.25)
+        try:
+            for ev in keybeeb.read():
+                mname = None
+                layer_swap = None
+                layer_swap = check_held_keys(keybeeb.active_keys(), layers)
+                if layer_swap and (time.time()-toggle_time)>=toggle_delay:
+                    toggle_time = time.time()
+                    layer = switch_layer(layer_swap, macros)
+                    log.debug("Layer Swap" + str(layer))
+                    # Execute optional command
+                    execute_layer_command(layers, layer_swap)
 
-        for ev in keybeeb.read_loop():
-            mname = None
-            layer_swap = None
-            layer_swap = check_held_keys(keybeeb.active_keys(), layers)
-            if layer_swap and (time.time()-toggle_time)>=toggle_delay:
-                toggle_time = time.time()
-                layer = switch_layer(layer_swap, macros)
-                log.debug("Layer Swap" + str(layer))
-                # Execute optional command
-                execute_layer_command(layers, layer_swap)
-
-            mname = check_held_keys(keybeeb.active_keys(), layer)
-            if mname == None: # if none returned check if raw key code is present
-                mname = check_held_keys([ev.code], layer)
-                if mname:
-                    mtype, minfo = get_macro_info(mname, layer)
-                    if mtype=="button":
-                        log.debug(f"Executing button macro: {mname} Command: {minfo}")
-                        if(str(ev.value) in minfo):
-                            ui.write(e.EV_KEY, minfo[str(ev.value)], 1)
-                            ui.write(e.EV_KEY, minfo[str(ev.value)], 0)
-                            ui.write(e.EV_SYN, 0, 0)
+                mname = check_held_keys(keybeeb.active_keys(), layer)
+                if mname == None: # if none returned check if raw key code is present
+                    mname = check_held_keys([ev.code], layer)
+                    if mname:
+                        mtype, minfo = get_macro_info(mname, layer)
+                        if mtype=="button":
+                            log.debug(f"Executing button macro: {mname} Command: {minfo}")
+                            if(str(ev.value) in minfo):
+                                ui.write(e.EV_KEY, minfo[str(ev.value)], 1)
+                                ui.write(e.EV_KEY, minfo[str(ev.value)], 0)
+                                ui.write(e.EV_SYN, 0, 0)
+                                continue
+                        elif mtype=="dispose": 
+                            log.debug(f"Disposing of event: {mname}")
                             continue
-                    elif mtype=="dispose": 
+                    mname = None
+                if mname and (time.time()-toggle_time)>=toggle_delay:
+                    toggle_time = time.time()
+                    mtype, minfo = get_macro_info(mname, layer)
+                    if mtype == "cmd":
+                        log.debug(f"Executing macro: {mname} Command: {minfo}")
+                        subprocess.Popen(minfo, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = os.setpgrp)
+                    elif mtype == "key":
+                        log.debug(f"Executing macro: {mname} Key: {minfo}")
+                        ui.write(e.EV_KEY, minfo[0], 1)
+                        ui.write(e.EV_KEY, minfo[0], 0)
+                        ui.write(e.EV_SYN, 0, 0)
+                    elif mtype == "keylist":
+                        log.debug(f"Executing macro: {mname} keylist: {minfo}")
+                        for keycode in minfo:
+                            ui.write(e.EV_KEY, keycode, 1)
+                            ui.write(e.EV_KEY, keycode, 0)
+                        ui.write(e.EV_SYN, 0, 0)
+                    elif mtype == "keycomb":
+                        for keycode in minfo:
+                            # for keycode in keyset:
+                            if type(keycode) is int:
+                                if keycode>0:
+                                    ui.write(e.EV_KEY, keycode, 1) #down
+                                else:
+                                    ui.write(e.EV_KEY, -keycode, 0) #up
+                            elif type(keycode) is float: #sleep
+                                ui.write(e.EV_SYN, 0, 0)
+                                time.sleep(keycode)
+                            elif type(keycode) is list:
+                                for k in keycode:
+                                    ui.write(e.EV_KEY, k, 1)
+                                    ui.write(e.EV_KEY, k, 0)
+                                ui.write(e.EV_SYN, 0, 0)
+
+
+                        ui.write(e.EV_SYN, 0, 0)
+                            # time.sleep(0.01)
+
+                    elif mtype == "dispose":
                         log.debug(f"Disposing of event: {mname}")
                         continue
-                mname = None
-            if mname and (time.time()-toggle_time)>=toggle_delay:
-                toggle_time = time.time()
-                mtype, minfo = get_macro_info(mname, layer)
-                if mtype == "cmd":
-                    log.debug(f"Executing macro: {mname} Command: {minfo}")
-                    subprocess.Popen(minfo, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = os.setpgrp)
-                elif mtype == "key":
-                    log.debug(f"Executing macro: {mname} Key: {minfo}")
-                    ui.write(e.EV_KEY, minfo[0], 1)
-                    ui.write(e.EV_KEY, minfo[0], 0)
-                    ui.write(e.EV_SYN, 0, 0)
-                elif mtype == "keylist":
-                    log.debug(f"Executing macro: {mname} keylist: {minfo}")
-                    for keycode in minfo:
-                        ui.write(e.EV_KEY, keycode, 1)
-                        ui.write(e.EV_KEY, keycode, 0)
-                    ui.write(e.EV_SYN, 0, 0)
-                elif mtype == "keycomb":
-                    for keycode in minfo:
-                        # for keycode in keyset:
-                        if type(keycode) is int:
-                            if keycode>0:
-                                ui.write(e.EV_KEY, keycode, 1) #down
-                            else:
-                                ui.write(e.EV_KEY, -keycode, 0) #up
-                        elif type(keycode) is float: #sleep
-                            ui.write(e.EV_SYN, 0, 0)
-                            time.sleep(keycode)
-                        elif type(keycode) is list:
-                            for k in keycode:
-                                ui.write(e.EV_KEY, k, 1)
-                                ui.write(e.EV_KEY, k, 0)
-                            ui.write(e.EV_SYN, 0, 0)
 
-
-                    ui.write(e.EV_SYN, 0, 0)
-                        # time.sleep(0.01)
-
-                elif mtype == "dispose":
-                    log.debug(f"Disposing of event: {mname}")
-                    continue
-
-            if (not only_defined and not mname):
-                log.debug(f"Command - TYPE:{ev.type} CODE:{ev.code} VALUE:{ev.value}")
-                ui.write(ev.type, ev.code, ev.value)
-            #print(ev)
-    except OSError:
-        log.warning("device disconnected!")
-        sys.stdout.write("Device probably was disconnected")
+                if (not only_defined and not mname):
+                    log.debug(f"Command - TYPE:{ev.type} CODE:{ev.code} VALUE:{ev.value}")
+                    ui.write(ev.type, ev.code, ev.value)
+                #print(ev)
+        except BlockingIOError:
+            pass
+        except OSError:
+            log.warning("Device disconnected!")
+            sys.stdout.write("Device probably was disconnected\n")
+            dev_connected = False
 
 def parse_arguments():
     global args
@@ -351,6 +363,12 @@ def build_macro_list():
     log.debug(f"Layer swap hotkey list: {layer_info}")
     return
 
+def stop_loop(signum, frame):
+    global events_loop
+
+    events_loop = False
+    return None
+
 if __name__ == "__main__":
     # Parse program arguments
     parse_arguments()
@@ -373,14 +391,17 @@ if __name__ == "__main__":
         log.error(f"Config file '{config_file}' not found!")
         sys.stderr.write(f"Config file '{config_file}' not found!\n")
         sys.exit(1)
-    
+    # Set signals interception
+    signal.signal(signal.SIGABRT, stop_loop)
+    signal.signal(signal.SIGTERM, stop_loop)
+    signal.signal(signal.SIGINT, stop_loop)
     # Build macros list
     log.debug("Building macros list")
     build_macro_list()
 
     time.sleep(1)
 
-    while True:
+    while events_loop:
         devices = get_devices()
         dev = grab_device(devices, dev_name)
         if dev is not None:
@@ -391,6 +412,11 @@ if __name__ == "__main__":
                 ui = evdev.UInput(name="Macropad Output")
             if full_grab: dev.grab()
             event_loop(dev, layer_info, macros)
-        log.warning("Device probably was disconnected")
-        sys.stdout.write("Device probably was disconnected")
-        time.sleep(5)
+        if events_loop == True:
+            log.warning("Device probably was disconnected")
+            sys.stdout.write("Device probably was disconnected\n")
+            time.sleep(5)
+            dev_connected = True
+    log.info("Program interrupted")
+    sys.stdout.write("\nProgram interrupted\n")
+    sys.exit(0)
