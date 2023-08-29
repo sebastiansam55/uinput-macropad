@@ -2,7 +2,7 @@
 # -*- coding: utf-8 *-*
 #
 # UInput-macropad
-# Version: 0.1
+# Version: 0.3
 # Date: 20 Aug. 2023
 # Copyright: 2021, 2022 sebastiansam55
 # Copyright: 2023 Lurgainn
@@ -40,7 +40,7 @@ from select import select
 
 # Constants
 PROGNAME = 'UInput Macropad'
-VERSION = '0.2'         # Until a stable release, this numeration will not follow version's common rules
+VERSION = '0.3'         # Until a stable release, this numeration will not follow version's common rules
 DEFAULT_CONFIG_FILE = '~/.config/uinput-macropad/config.json'
 LOG_FILE_PATH = '~/.local/state/'
 LOG_FILE_NAME = 'uinput-macropad'
